@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ultra Infinity Trillion-X Ω — Quantum Conscious Universe</title>
+<style>body{margin:0;overflow:hidden;}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/webxr/VRButton.js"></script>
+</head>
+<body>
+<script>
+fetch('trillionx_omega_conscious_data.json').then(r=>r.json()).then(frames=>{
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 50000);
+    const renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+    document.body.appendChild(THREE.VRButton.createButton(renderer));
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+    const totalPoints = frames[0].reduce((sum, layer) => sum + layer.length, 0);
+    const positions = new Float32Array(totalPoints*3);
+    const colors = new Float32Array(totalPoints*3);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors,3));
+    const material = new THREE.PointsMaterial({size:0.18, vertexColors:true});
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    camera.position.set(0,200,2500);
+
+    // ===============================
+    // Web Audio ديناميكي (طبقات صوت مرتبطة بالنشاط العصبي)
+    // ===============================
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc1 = audioCtx.createOscillator(); osc1.type='sine'; osc1.start();
+    const osc2 = audioCtx.createOscillator(); osc2.type='triangle'; osc2.start();
+    const osc3 = audioCtx.createOscillator(); osc3.type='sawtooth'; osc3.start();
+    const gainNode = audioCtx.createGain(); gainNode.gain.value = 0.1;
+    osc1.connect(gainNode); osc2.connect(gainNode); osc3.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    // VR Controllers placeholders
+    const controller1 = renderer.xr.getController(0);
+    const controller2 = renderer.xr.getController(1);
+    scene.add(controller1); scene.add(controller2);
+
+    let t=0;
+    function animate(){
+        renderer.setAnimationLoop(()=>{
+            let idx=0, meanActivation=0;
+            for(let layer=0; layer<frames[0].length; layer++){
+                for(let i=0;i<frames[0][layer].length;i++){
+                    // 4D illusion: تشويه هندسي عبر sin/cos
+                    positions[idx*3] = (i-frames[0][layer].length/2)*0.8 + Math.sin(t/20+layer/10)*50;
+                    positions[idx*3+1] = (layer-frames[0].length/2)*3.5 + Math.cos(t/30+layer/15)*30;
+                    positions[idx*3+2] = frames[t][layer][i]*500 + Math.sin(i/50 + t/10)*20;
+
+                    const c = frames[t][layer][i];
+                    colors[idx*3] = c; colors[idx*3+1] = 0.2*c; colors[idx*3+2] = 1-c;
+                    meanActivation += c; idx++;
+                }
+            }
+            meanActivation /= totalPoints;
+
+            // Self-modulation: تغيير الصوت حسب الطاقة العصبية
+            gainNode.gain.setValueAtTime(0.05 + meanActivation*0.45, audioCtx.currentTime);
+            osc1.frequency.setValueAtTime(220 + meanActivation*2000, audioCtx.currentTime);
+            osc2.frequency.setValueAtTime(110 + meanActivation*1000, audioCtx.currentTime);
+            osc3.frequency.setValueAtTime(440 + meanActivation*1500, audioCtx.currentTime);
+
+            geometry.attributes.position.needsUpdate=true;
+            geometry.attributes.color.needsUpdate=true;
+            controls.update();
+            renderer.render(scene, camera);
+            t=(t+1)%frames.length;
+        });
+    }
+    animate();
+
+    window.addEventListener('resize',()=>{
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    document.body.addEventListener('click',()=>{ audioCtx.resume(); });
+});
+</script>
+</body>
+</html>
